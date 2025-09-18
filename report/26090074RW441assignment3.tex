@@ -70,28 +70,115 @@ component, formatting, style, styling, insert
 
 \section{Description of datasets}
 
-For each the following is discussed:
+\subsection{Dataset 1: }
 
-% TODO Stationary or non-stationary
-% TODO Description of features
+\subsection{Dataset 2: }
 
-\end{enumerate}
+\subsection{Dataset 3: }
+
+\subsection{Dataset 4: }
+
+\subsection{Dataset 5: }
+
+\section{Background: Time series cross-validation}
+
+\subsection{Time-series-split}
+
+Creates folds where the observations of the validation set are always after the observations of the test set. The start of each fold is the beginning of the dataset. This allows for more splits, but creates leakage from future data to the model.
+
+\subsection{Blocked cross-validation}
+
+Works the same as time-series split but with added margins. One added between training and validation set. This is due to the correlation between observations at the end of the training set and beginning of validation set being very high, allowing the model to cheat a little bit. The second margin is added between the folds themselves, to prevent models from learning patterns from one fold iteration to the next. This allows for more splits and solves the data leakage issue but comes with the cost of increased computational requirements.
+
+\subsection{Regular predict second half}
+
+\subsection{Regular day forward chaining}
+
+\subsection{Population data day forward chaining}
+
+\section{Background: RNN network architectures}
+
+\subsection{Elman and Jordan recurrent neural network}
+
+Both the Elman and Jordan RNNs are three layer networks (input, hidden and output layer) with the Jordan RNN having an additional state vector (known as context units). The following notation is defined:
 
 \begin{enumerate}
-	\item Iris data set
+	\item $a,b,c,d,e,f,g \in \mathbb{Z}_{>0}$: A positive non-zero integer
+	
+	\item $x_t \in \mathbb{R}^a$: Input layer vector at time t
+	\item $h_t \in \mathbb{R}^b$: Hidden layer vector at time t
+	\item $y_t \in \mathbb{R}^c$: Output layer vector at time t
+	
+	\item $b_h \in \mathbb{R}^{d}$: Bias parameter vector for hidden layer
+	\item $b_y \in \mathbb{R}^{e}$: Bias parameter vector for output layer
+	
+	\item $W_h \in \mathbb{R}^{d \times a}$: Input layer parameter matrix
+	\item $U_h \in \mathbb{R}^{d \times b}$: Hidden layer parameter matrix
+	
+	\item $W_y \in \mathbb{R}^{e \times b}$: Output layer parameter matrix
+	
+	
+	\item $\sigma_h: \mathbb{R}^e \to \mathbb{R}^b $: Activation function for hidden layer
+	\item $\sigma_y: \mathbb{R}^e \to \mathbb{R}^c $: Activation function for output layer
 \end{enumerate}
 
-\section{Background}
+% https://spotintelligence.com/2023/02/01/elman-rnn/
 
-\subsection{Elman recurrent neural network}
+% https://en.wikipedia.org/wiki/Recurrent_neural_network
 
-\subsection{Jorden recurrent neural network}
+The Elman RNN hidden state $h_t$ depends on both the input vector $x_t$ and the previous hidden state $h_t$ (this is the context vector). At each time the following is computed:
+
+\begin{enumerate}
+	\item $h_t = \sigma_h(W_h x_t + U_h h_{t-1} + b_h)$: 
+	\item $y_t = \sigma_y(W_y h_t + b_y)$: 
+\end{enumerate}
+
+This is known as the forward pass. Some specified learning rule is applied in order to adjust the parameters of the model. For example we could calculate gradients of parameters with respect to loss and back-propagate in a backward pass. The previous hidden state $h_t$ is brought forward to next iteration 
+
+The following additional components are added to the Jordan RNN:
+
+\begin{enumerate}
+	\item $s_t \in \mathbb{R}^f$: State layer vector at time t
+	
+	\item $b_s \in \mathbb{R}^{g}$: Bias parameter vector for state layer
+	
+	\item $W_{s,s} \in \mathbb{R}^{g \times f}$: State parameter matrix
+	\item $W_{s,y} \in \mathbb{R}^{g \times c}$: State parameter matrix
+	
+	\item $\sigma_s: \mathbb{R}^g \to \mathbb{R}^f$: Activation function for state layer
+	
+	
+	
+\end{enumerate}
+
+With the following updates at each time step:
+
+\begin{enumerate}
+	\item $h_t = \sigma_h(W_h x_t + U_h s_t + b_h)$: 
+	\item $y_t = \sigma_y(W_y h_t + b_y)$: 
+	\item $s_t = \sigma_s(W_{s,s} s_{t-1} + W_{s,y} y_{t-1} + b_s)$: 
+\end{enumerate}
+
+As we can see the hidden layer $h_t$ in a Jordan RNN is updated using a state layer vector $s_t$ (context units) instead of the previous hidden layer $h_{t-1}$. The state layer vector is updated using the previous state $s_{t-1}$ and the previous output $y_{t-1}$.
+
 
 \subsection{Multi-recurrent neural network}
 
 \section{Implementation}
 
+\subsection{Selected optimization algorithms and loss functions}
+
+\subsection{How underfitting and overfitting was prevented}
+
+\subsection{Settings for hyperparameters}
+
+\subsection{Neural network architecture}
+
+\subsection{Performance measures}
+
 \section{Empirical process}
+
+\subsection{Best simple RNN was chosen}
 
 \section{Results \& discussion}
 

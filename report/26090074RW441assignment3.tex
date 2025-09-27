@@ -7,6 +7,8 @@
 \usepackage{graphicx}
 \usepackage{textcomp}
 \usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{csvsimple}
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 \begin{document}
@@ -70,7 +72,20 @@ component, formatting, style, styling, insert
 
 \section{Description of datasets}
 
-\subsection{Dataset 1: }
+\subsection{Dataset 1: Apple Stock Data}
+
+Pre-processing included converting the string date into a DateTime format. Renaming columns for convenience. The Closing\_Price column was a string type with a '\$' sign pre-pended to the front. This was removed and the feature was converted to a float value since the RNN requires all features to be numerical. The Year, Month, Day and Weekday features were extracted from the DateTime and converted into two dimensions using sine and cosine transformations. This was done because the RNN requires all features to be numerical. Volume, Open, High, Low, Date, Year, Month, Day, Weekday features were dropped since we are only interested in predicting the closing price for the day and some of the features were redundant. Here are the summary statistics post pre-processing:
+
+\begin{table}[htbp]
+	\caption{Apple stock summary statistics post pre-processing}
+	\resizebox{\columnwidth}{!}{
+		\csvautobooktabular{../csv-descriptions/summary-statistics-for-apple.csv}
+	}
+	\label{tab:apple-summary}
+\end{table}
+
+The Apple stock data is non-stationary. The Apple stock data is a regression problem. The distributions were inspected using bar plots and no outliers or noise was found.
+
 
 \subsection{Dataset 2: }
 
@@ -164,17 +179,36 @@ As we can see the hidden layer $h_t$ in a Jordan RNN is updated using a state la
 
 \subsection{Multi-recurrent neural network}
 
+
+
+
+
+
+
 \section{Implementation}
 
-\subsection{Selected optimization algorithms and loss functions}
 
-\subsection{How underfitting and overfitting was prevented}
+% Selected optimization algorithms and loss functions
+% How under-fitting and over-fitting was prevented
+% Settings for hyper-parameters
+% Neural network architecture
+% Performance measures
 
-\subsection{Settings for hyperparameters}
+\subsubsection{Dataset 1: Apple Stock Data}
 
-\subsection{Neural network architecture}
+An Elman RNN was trained using the Apple stock data. The loss function used was mean-squared error. The \texttt{torch.optim.Adam} Adam optimizer was used with \texttt{learning\_rate}=0.002, which was increased from the original amount of 0.001 after it was noticed that the training was taking long to find the local minima.
+The test versus validation performance was carefully monitored using plots throughout the folds. 
+A standard time series data set split was used as maximum data retention was needed as there was not a lot of data to train with.
+The size of the hidden layer is 32. Only 1 layer was used, as instructed. A $tanh$ activation function was used. Bias parameters were used. No drop-out was applied. Batch size was 16. The model was trained for 25 epochs for each fold. A sequence length of 64 was used. At fold 7, the test and validation performance matched, indicating best generalisation performance. The performance degraded significantly as the number of epochs increased. 8-fold time series cross-validation was used.
 
-\subsection{Performance measures}
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=1.0\linewidth]{../images/elman_hidden32_test_vs_val_fold7.pdf}
+	\caption{Elman RNN Test vs. Validation Performance (hidden layer size 32, fold 7)}
+	\label{fig:example}
+\end{figure}
+
+In fold 8, the MSE was as low as 13.0346 for the validation data, although it must be noted that the scale of the data is important here since the price of the stock increases by very little every day (for most days), so a low MSE isn't as meaningful. We can see however some local optimum is reached and the performance is not bad.
 
 \section{Empirical process}
 

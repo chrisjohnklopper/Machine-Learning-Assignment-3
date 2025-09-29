@@ -1,0 +1,5 @@
+Model,Mean,Median,Std. Deviation
+Elman RNN with 32 hidden units,2503.72,2211.83,1846.25
+Jordan RNN with 32 hidden units,6047.99,2166.58,10215.59
+Multi-Recurrent RNN with 32 hidden units,5452.3,6698.72,3868.99
+Elman RNN with 16 hidden units,3834.66,2778.28,4306.75

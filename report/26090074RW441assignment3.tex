@@ -9,6 +9,7 @@
 \usepackage{xcolor}
 \usepackage{booktabs}
 \usepackage{csvsimple}
+\usepackage{float}
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 \begin{document}
@@ -113,6 +114,8 @@ Works the same as time-series split but with added margins. One added between tr
 
 \section{Background: RNN network architectures}
 
+This section covers current literature on the different RNN architectures experimented with in this paper. Inputs are fed into network 
+
 \subsection{Elman and Jordan recurrent neural network}
 
 Both the Elman and Jordan RNNs are three layer networks (input, hidden and output layer) with the Jordan RNN having an additional state vector (known as context units). The following notation is defined:
@@ -174,10 +177,79 @@ With the following updates at each time step:
 	\item $s_t = \sigma_s(W_{s,s} s_{t-1} + W_{s,y} y_{t-1} + b_s)$: 
 \end{enumerate}
 
-As we can see the hidden layer $h_t$ in a Jordan RNN is updated using a state layer vector $s_t$ (context units) instead of the previous hidden layer $h_{t-1}$. The state layer vector is updated using the previous state $s_{t-1}$ and the previous output $y_{t-1}$.
+As we can see the hidden layer $h_t$ in a Jordan RNN is updated using a state layer vector $s_t$ (context units) instead of the previous hidden layer $h_{t-1}$. The state layer vector is updated using the previous state $s_{t-1}$ and the previous output $y_{t-1}$. Both models were implemented using the \texttt{torch} package exactly as described here.
 
 
 \subsection{Multi-recurrent neural network}
+
+For brevity the absolute dimensions of matrices and vectors are not specified but can be implied.
+
+\subsubsection{Memory architecture and configuration}
+
+Layer link ratio determines what proportion of the new layer activations are stored. Self link ratios determine what proportion of the previous memory is retained. Ratios between links determine if we have sluggish state-based memory bank. rapid memory bank or stable memory bank.
+
+Memory composition is a hyper parameter which is specified as positive integers $i$, $h$, $o$ where $i$ is the allocation for input, $h$ is allocation for hidden and $o$ is allocation for output.
+
+It is an extension of the state from an Elman or Jordan RNN which is keeps information from potentially all layers and is more dynamic as we can specify ratios.
+
+Based off the memory composition we calculate the following:
+
+\begin{enumerate}
+	\item $n_M$: allocated number of memory banks for type $M$ which would be input, hidden, output.
+	\item $\frac{i}{n_M}$: layer-link ratio for $i=n_m, \dots, 2, 1$
+	\item $1 - \frac{i}{n_M}$: self-link ratio for $i=n_m, \dots, 2, 1$
+\end{enumerate}
+
+
+
+
+
+\subsubsection{Forward pass}
+
+Inputs and memory banks fed to input layer, input layer outputs fed into hidden layer, hidden layer outputs and biases fed to output layer to produce network output.
+
+Output layer outputs and current memory bank are copied using using layer link ratio and self link ratios.
+
+Memory bank is updated. Weights and biases are updated using back-propagation.
+
+\begin{enumerate}
+	\item $n_i$: allocated number of memory banks for input
+	\item $n_o$: allocated number of memory banks for output
+	\item $n_h$: allocated number of memory banks for hidden
+	\item $I_{t-1}$: input layer outputs at time $t-1$
+	\item $H_{t-1}$: hidden layer outputs at time $t-1$
+	\item $O_{t-1}$: output layer outputs at time $t-1$
+	\item $W_{i_h}$: weights from input layer to hidden layer
+	\item $W_{i_o}$: weights from hidden layer to output layer
+	\item $W_{M_{ih}}$: weights of input memory bank to hidden layer
+	\item $W_{M_{hh}}$: weights of hidden memory bank to hidden layer
+	\item $W_{M_{oh}}$: weights of output memory bank to hidden layer
+	\item $M_{ih}$: input memory bank to hidden layer
+	\item $M_{hh}$: hidden memory bank to hidden layer
+	\item $M_{oh}$: output memory bank to hidden layer
+	\item $f$: activation function
+	\item $b_i$: input layer biases
+	\item $b_h$: hidden layer biases
+\end{enumerate}
+
+Updates to memory during forward pass:
+
+\begin{enumerate}[]
+	\item $M_{t_{i}} = \left(\tfrac{1}{n_{i}} \times I_{t-1}\right) + \left(1 - \tfrac{1}{n_{i}}\right) \times M_{t-1_{i}}$
+	
+	\item $M_{t_{h}} = \left(\tfrac{1}{n_{h}} \times H_{t-1}\right) + \left(1 - \tfrac{1}{n_{h}}\right) \times M_{t-1_{h}}$
+	
+	\item $M_{t_{o}} = \left(\tfrac{1}{n_{o}} \times O_{t-1}\right) + \left(1 - \tfrac{1}{n_{o}}\right) \times M_{t-1_{o}}$
+\end{enumerate}
+
+Outputs of hidden layer at time $t$ are:
+\begin{align*}
+	H_{t} &= f\Big( \sum W_{ih} I_{t} + \sum W_{Mi h} M_{t_i} \notag \\
+	&\quad + \sum W_{Mh h} M_{t_h} + \sum W_{Mo h} M_{t_o} + b_{i} \Big)
+\end{align*}
+
+Outputs for output layer at time $t$ is: $O_{t} = \sum W_{h_o} H_{t} + b_{h}$
+
 
 
 
@@ -187,34 +259,48 @@ As we can see the hidden layer $h_t$ in a Jordan RNN is updated using a state la
 
 \section{Implementation}
 
+The models were implemented using \texttt{torch} modules using the exact mathematical definitions defined in the background section. Dropout and early stopping was added.
+
 
 % Selected optimization algorithms and loss functions
 % How under-fitting and over-fitting was prevented
 % Settings for hyper-parameters
 % Neural network architecture
 % Performance measures
-
-\subsubsection{Dataset 1: Apple Stock Data}
-
-An Elman RNN was trained using the Apple stock data. The loss function used was mean-squared error. The \texttt{torch.optim.Adam} Adam optimizer was used with \texttt{learning\_rate}=0.002, which was increased from the original amount of 0.001 after it was noticed that the training was taking long to find the local minima.
-The test versus validation performance was carefully monitored using plots throughout the folds. 
-A standard time series data set split was used as maximum data retention was needed as there was not a lot of data to train with.
-The size of the hidden layer is 32. Only 1 layer was used, as instructed. A $tanh$ activation function was used. Bias parameters were used. No drop-out was applied. Batch size was 16. The model was trained for 25 epochs for each fold. A sequence length of 64 was used. At fold 7, the test and validation performance matched, indicating best generalisation performance. The performance degraded significantly as the number of epochs increased. 8-fold time series cross-validation was used.
-
-\begin{figure}[htbp]
-	\centering
-	\includegraphics[width=1.0\linewidth]{../images/elman_hidden32_test_vs_val_fold7.pdf}
-	\caption{Elman RNN Test vs. Validation Performance (hidden layer size 32, fold 7)}
-	\label{fig:example}
-\end{figure}
-
-In fold 8, the MSE was as low as 13.0346 for the validation data, although it must be noted that the scale of the data is important here since the price of the stock increases by very little every day (for most days), so a low MSE isn't as meaningful. We can see however some local optimum is reached and the performance is not bad.
+% Best simple RNN was chosen
 
 \section{Empirical process}
 
-\subsection{Best simple RNN was chosen}
-
 \section{Results \& discussion}
+
+\subsubsection{Dataset 1: Apple Stock Data}
+
+An Elman RNN was trained using the Apple stock data. The loss function used was mean-squared error. The \texttt{torch.optim.Adam} Adam optimizer was used with a learning rate of 0.002, which was adjusted based on test versus validation performance.
+
+The test versus validation performance for each fold was monitored using plots to prevent over-fitting and under-fitting.
+
+A standard time series data set split was used as maximum data retention was needed as there was not a lot of data to train with.
+
+\begin{figure}[htbp] 
+	\centering
+	\includegraphics[width=1.0\linewidth]{../images/apple-closing-price-over-time.pdf}
+	\caption{Apple closing price over time}
+	\label{fig:apple-closing}
+\end{figure}
+
+All tested models struggled to stabilise parameters when the price surges (around 2020-2021) were included in the fold. The models sometimes over-fitted and other times under-fitted depending on the fold it trained on. The models mainly over-fitted. The multi-recurrent RNN was particularly susceptible to over-fitting.
+
+The Jordan RNN performed better then the Elman RNN for folds with more training data. Dropout was applied in order to decrease over-fitting, which lead to an increase in performance. 
+
+\begin{table}[htbp]
+	\caption{Apple stock cross-validation best performance results (MSE)}
+	\resizebox{\columnwidth}{!}{
+		\csvautobooktabular{../csv-descriptions/cv-results-apple-combined.csv}
+	}
+	\label{tab:apple-results}
+\end{table}
+
+The best RNN for the Apple stock dataset was chosen based off the median cross-validation MSE result. There is not enough data for the memory banks of the Multi-recurrent RNN to be practical. From this testing the Jordan RNN is the best for the Apple stock price dataset.
 
 \section{Conclusion}
 

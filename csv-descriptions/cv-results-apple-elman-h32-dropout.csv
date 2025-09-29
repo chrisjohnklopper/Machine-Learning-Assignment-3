@@ -1,0 +1,2 @@
+Model,Mean,Median,Std. Deviation
+Elman RNN with 32 hidden units and dropout 0.02,5319.3,1383.02,9466.75

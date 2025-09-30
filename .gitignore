@@ -5,6 +5,9 @@ __pycache__/
 
 /given-files
 /datasets
+/pickles
+/csv-descriptions
+/csvs
 
 *.acn
 *.acr

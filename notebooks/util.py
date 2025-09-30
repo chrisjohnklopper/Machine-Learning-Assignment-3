@@ -8,20 +8,56 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import TimeSeriesSplit
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 
 # ==================== Helper functions for RNN ====================
 
-def create_sequences(X, y, sequence_length):
+def create_sequences(X, y, sequence_length, id_feature_name_in_X=None):
     X_sequences = []
     y_sequences = []
+
+    # make X and y pandas
+    X = pd.DataFrame(X)
+    y = pd.Series(y)
     
-    for i in range(len(X) - sequence_length + 1):
-        X_sequences.append(X[i:i + sequence_length])
-        y_sequences.append(y[i + sequence_length - 1])
+    if id_feature_name_in_X is not None:
+        ids = X[id_feature_name_in_X].values
+        for i in range(len(X) - sequence_length + 1):
+            if len(set(ids[i:i + sequence_length])) == 1:
+                X_sequences.append(X.iloc[i:i + sequence_length].values)
+                y_sequences.append(y.iloc[i + sequence_length - 1])
+    else:
+        for i in range(len(X) - sequence_length + 1):
+            X_sequences.append(X.iloc[i:i + sequence_length].values)
+            y_sequences.append(y.iloc[i + sequence_length - 1])
     
     return np.array(X_sequences), np.array(y_sequences)
 
 # ==================== Functions for graphing ====================
+
+def plot_crosstab(df, bool_col1, target_boolean_feature):
+    cross_tab = pd.crosstab(df[bool_col1], df[target_boolean_feature], normalize='index')
+    
+    
+    cross_tab.plot(kind='bar', stacked=True)
+    plt.title(f'{target_boolean_feature} by {bool_col1}')
+    
+    plt.xlabel(bool_col1)
+    plt.ylabel('Relative Frequency')
+    
+    plt.legend(title=target_boolean_feature, loc='upper right', labels=['No Failure', 'Failure'])
+    
+    plt.show()
+
+def plot_boxplot_numerical_vs_boolean(df, num_col, bool_col):
+    df.boxplot(column=num_col, by=bool_col, figsize=(8,5))
+    plt.title(f"{num_col} vs {bool_col}")
+    plt.suptitle("")
+    
+    plt.xlabel(bool_col)
+    
+    plt.ylabel(num_col)
+    plt.show()
 
 def plot_test_versus_validation(test_losses, validation_losses, save_path=None, title=None):
     plt.plot(test_losses, label='Test Loss', color='blue')
@@ -35,7 +71,8 @@ def plot_test_versus_validation(test_losses, validation_losses, save_path=None, 
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
     plt.show()
 
-def plot_feature_over_time(data, feature, save_path=None, dates=None):
+def plot_feature_over_time(data, feature, save_path=None, dates=None, shape=(10,5)):
+    plt.figure(figsize=shape)
     plt.plot(dates,
              data[feature],
              label=feature,
@@ -245,7 +282,7 @@ class MultiRecurrentNN(Module):
             
             # Activation function 
 
-            H_t = torch.sigmoid(H_net)
+            H_t = torch.tanh(H_net)
             H_t = self.dropout(H_t)
             O_t = self.W_ho(H_t) + self.b_h
         
@@ -275,16 +312,22 @@ class EarlyStopping:
             self.counter = 0
 
 def training(model,
-             data,
-             num_epochs=25,
-             batch_size=16,
-             learning_rate=0.002,
-             target_feature_name=None,
-             model_name=None,
-             splits=8,
-             patience=5,
-             min_delta=0,
-             loss_function=MSELoss()):
+            data,
+            num_epochs=25,
+            batch_size=16,
+            optimizer_learning_rate=0.002,
+            optimizer_weight_decay=0,
+            optimizer_b1=0.9,
+            optimizer_b2=0.999,
+            target_feature_name=None,
+            model_name=None,
+            splits=8,
+            patience=5,
+            min_delta=0,
+            loss_function=MSELoss(),
+            scaler_X=StandardScaler(),
+            use_final_fold=False,
+            sequence_length=64):
     
     # Prepare data for training using blocked cross validation
 
@@ -297,7 +340,7 @@ def training(model,
     print(X.shape)
     print(y.shape)
 
-    X_sequences, y_sequences = create_sequences(X, y, sequence_length=64)
+    X_sequences, y_sequences = create_sequences(X, y, sequence_length=sequence_length)
 
     print(X_sequences.shape)
     print(y_sequences.shape)
@@ -309,6 +352,11 @@ def training(model,
     cv_scores = []
 
     for train_indices, validation_indices in split.split(X_sequences):
+
+        if use_final_fold and split_number < splits:
+            split_number += 1
+            continue
+        
 
         earlystopping = EarlyStopping(patience=patience, min_delta=min_delta)
 
@@ -323,7 +371,7 @@ def training(model,
         y_train, y_validation = y_sequences[train_indices], y_sequences[validation_indices]
 
         # Scale data
-        scaler_X = StandardScaler()
+        #scaler_X = StandardScaler()
         X_train = scaler_X.fit_transform(X_train.reshape(-1, input_shape)).reshape(X_train.shape)
         X_validation = scaler_X.transform(X_validation.reshape(-1, input_shape)).reshape(X_validation.shape)
 
@@ -340,11 +388,16 @@ def training(model,
         validation_loader = DataLoader(validation_dataset, batch_size=batch_size, shuffle=False)
 
         # Initialize model, loss function, and optimizer
-        model = model
-        optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+
+        optimizer = torch.optim.Adam(model.parameters(),
+                                     lr=optimizer_learning_rate,
+                                     weight_decay=optimizer_weight_decay,
+                                     betas=(optimizer_b1, optimizer_b2))
+
 
         best_epoch_loss = float('inf')
         best_epoch = -1
+        best_model = None
 
         for epoch in range(num_epochs):
             
@@ -381,6 +434,7 @@ def training(model,
             validation_losses.append(epoch_validation_loss / len(validation_loader))
 
             if epoch_validation_loss / len(validation_loader) < best_epoch_loss:
+                best_model = model
                 best_epoch_loss = epoch_validation_loss / len(validation_loader)
                 best_epoch = epoch+1
 
@@ -400,5 +454,5 @@ def training(model,
         cv_scores.append(best_epoch_loss)
 
         split_number += 1
-    return cv_scores
+    return {'cv_scores': cv_scores, 'model': best_model, 'scaler_X': scaler_X}
 

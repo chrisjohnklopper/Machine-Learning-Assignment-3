@@ -102,6 +102,42 @@ def convert_feature_into_cyclic(data, feature, max_value):
     data[f'{feature}Cos'] = np.cos(2 * np.pi * data[feature] / max_value)
     return data
 
+def get_predictions(raw_test, preprocessed_test, results, model_name, target_feature_name, xlabel, ylabel, title, show_plot=False, save_path=None): 
+    dates = raw_test['DateTime'].values
+    #results = weather_elman_h32_results 
+    scaler = results['scaler_X']
+    model = results['model']
+    preprocessed_test = scaler.transform(preprocessed_test.drop(columns=[target_feature_name]))
+    preprocessed_test = torch.tensor(preprocessed_test, dtype=torch.float32).unsqueeze(1)
+    preds = model(preprocessed_test)
+    preds = preds.detach().numpy()
+    preds = preds.squeeze()
+    actual = raw_test[target_feature_name].values
+    actual = actual[-len(preds):]
+
+    mses = abs(preds - actual)
+    prediction_results = pd.DataFrame(mses).describe().T
+    prediction_results.drop(columns=['count'], inplace=True)
+    prediction_results.rename(columns={'50%': 'Median', 'mean':'Mean', 'std':'Std. Dev.', 'min':'Min', 'max':'Max'}, inplace=True)
+    # make row name model name
+    prediction_results.index = [model_name]
+
+
+    # plot
+    if show_plot:
+        plt.figure(figsize=(15,7))
+        plt.plot(dates, actual, label='Actual')
+        plt.plot(dates, preds, label='Predicted')
+        plt.xlabel(xlabel)
+        plt.ylabel(ylabel)
+        plt.title(title)
+        plt.legend()
+        if save_path:
+            plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        plt.show()
+
+    return prediction_results
+
 # ==================== Torch modules for RNNs ====================
 
 class JordanRNN(Module):

@@ -10,6 +10,8 @@
 \usepackage{booktabs}
 \usepackage{csvsimple}
 \usepackage{float}
+\usepackage{caption}
+\usepackage{tabularx}
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 \begin{document}
@@ -71,27 +73,45 @@ component, formatting, style, styling, insert
 
 % TODO
 
-\section{Description of datasets}
+\section{Pre-processing and description of datasets}
 
 \subsection{Dataset 1: Apple Stock Data}
 
-Pre-processing included converting the string date into a DateTime format. Renaming columns for convenience. The Closing\_Price column was a string type with a '\$' sign pre-pended to the front. This was removed and the feature was converted to a float value since the RNN requires all features to be numerical. The Year, Month, Day and Weekday features were extracted from the DateTime and converted into two dimensions using sine and cosine transformations. This was done because the RNN requires all features to be numerical. Volume, Open, High, Low, Date, Year, Month, Day, Weekday features were dropped since we are only interested in predicting the closing price for the day and some of the features were redundant. Here are the summary statistics post pre-processing:
+Pre-processing included converting the string date into a DateTime format. Converting strings to float and int datatypes, where appropriate. Renaming columns for convenience. The Closing\_Price column was a string type with a '\$' sign pre-pended to the front. This was removed and the feature was converted to a float value since the RNN requires all features to be numerical. The Year, Month, Day and Weekday features were extracted from the DateTime and converted into two dimensions using sine and cosine transformations. This was done because the RNN requires all features to be numerical. Volume, Open, High, Low, Date, Year, Month, Day, Weekday features were dropped since we are only interested in predicting the closing price for the day and some of the features were redundant. Here are the summary statistics before pre-processing:
 
 \begin{table}[htbp]
-	\caption{Apple stock summary statistics post pre-processing}
+	\caption{Summary statistics for Apple stock data}
 	\resizebox{\columnwidth}{!}{
-		\csvautobooktabular{../csv-descriptions/summary-statistics-for-apple.csv}
+		\csvautobooktabular{../csv-descriptions/apple-raw-data-description.csv}
 	}
-	\label{tab:apple-summary}
+	\label{tab:apple-stats}
 \end{table}
 
 The Apple stock data is non-stationary. The Apple stock data is a regression problem. The distributions were inspected using bar plots and no outliers or noise was found.
 
+\subsection{Dataset 2: Cape Town weather data}
 
-\subsection{Dataset 2: }
+The data was sourced from Kaggle (https://www.kaggle.com/datasets/muthuj7/weather-dataset). For experimentation almost all features except the time and average temperature for the day was removed. Relevant features were extracted from the date (Year, Month, DayOfWeek, DayOfYear, WeekOfYear) and converted into two dimensions using sine and cosine transformations.
 
-\subsection{Dataset 3: }
+\begin{table}[htbp]
+	\centering
+	\caption{Summary statistics for Cape Town weather stock data}
+	\scriptsize
+	\scalebox{1.2}{
+		\csvautobooktabular{../csv-descriptions/weather-stats.csv}
+	}
+	\label{tab:weather-stats}
+\end{table}
 
+The Cape Town weather data is non-stationary. The Cape Town weather data is a regression problem. The distributions were inspected and no outliers or noise was found.
+ 
+\subsection{Dataset 3: Air quality data}
+
+This data set was obtained from the UCI Machine Learning repository (https://archive.ics.uci.edu/dataset/360/air+quality), more information on the data set can be obtained there. For this experimentation, we will try and predict the PT08.S3(NOx) feature of the data set.
+
+There were some empty rows and columns in the data set which were dropped. The HourOfDay, DayOfWeek and Month feature was extracted from the dates. The Year feature was not extracted as the data only spanned two years and the years did not provide any information. These features were converted to two dimensions using sine and cosine transformations. The ',' character was replaced with the '.' character in order to ensure that floats were correctly parsed. There were errors with the sensors where readings were less then or equal to 0, fill forward was used to replace these errors. PT08.S1(CO), C6H6(GT), PT08.S2(NMHC) were highly correlated with another feature so these features were dropped. The target feature also had these less or equal to 0 errors so all observations where the target feature had this error was dropped.
+
+The Air quality data is stationary. The Air quality data is a regression problem. The distributions were inspected and no outliers or noise were found. These outliers were not reading/sensor errors but part of natural distribution of dataset.
 \subsection{Dataset 4: }
 
 \subsection{Dataset 5: }
@@ -106,15 +126,9 @@ Creates folds where the observations of the validation set are always after the 
 
 Works the same as time-series split but with added margins. One added between training and validation set. This is due to the correlation between observations at the end of the training set and beginning of validation set being very high, allowing the model to cheat a little bit. The second margin is added between the folds themselves, to prevent models from learning patterns from one fold iteration to the next. This allows for more splits and solves the data leakage issue but comes with the cost of increased computational requirements.
 
-\subsection{Regular predict second half}
-
-\subsection{Regular day forward chaining}
-
-\subsection{Population data day forward chaining}
-
 \section{Background: RNN network architectures}
 
-This section covers current literature on the different RNN architectures experimented with in this paper. Inputs are fed into network 
+This section covers current literature on the different RNN architectures experimented with in this paper.
 
 \subsection{Elman and Jordan recurrent neural network}
 
@@ -151,7 +165,7 @@ The Elman RNN hidden state $h_t$ depends on both the input vector $x_t$ and the 
 	\item $y_t = \sigma_y(W_y h_t + b_y)$: 
 \end{enumerate}
 
-This is known as the forward pass. Some specified learning rule is applied in order to adjust the parameters of the model. For example we could calculate gradients of parameters with respect to loss and back-propagate in a backward pass. The previous hidden state $h_t$ is brought forward to next iteration 
+This is known as the forward pass. Some specified learning rule is applied in order to adjust the parameters of the model. For example we could calculate gradients of parameters with respect to loss and back-propagate in a backward pass. The previous hidden state $h_t$ is brought forward to next iteration.
 
 The following additional components are added to the Jordan RNN:
 
@@ -259,7 +273,7 @@ Outputs for output layer at time $t$ is: $O_{t} = \sum W_{h_o} H_{t} + b_{h}$
 
 \section{Implementation}
 
-The models were implemented using \texttt{torch} modules using the exact mathematical definitions defined in the background section. Dropout and early stopping was added.
+The models were implemented using \texttt{torch} modules using the exact mathematical definitions defined in the background section. Dropout and early stopping was added to prevent deter over-fitting. $tanh$ actiavtion functions were used for consistency across models.
 
 
 % Selected optimization algorithms and loss functions
@@ -271,36 +285,120 @@ The models were implemented using \texttt{torch} modules using the exact mathema
 
 \section{Empirical process}
 
+Data was preprocessed into required format. This means recognising and dealing with noisy data, outliers, class imbalances and so forth. The models were tested with a base line model. If models began over-fitting too much, the weight decay and dropout was increased. The learning rate would be decreased if oscillation around the local minima began. The momentum parameter of the Adam optimizer was modified if the convergence seemed slow. The data was split was 70\% training and 30\% test. The training data was used in cross-validation. The distribution of features over time was plotted in order to better understand the features.
+
 \section{Results \& discussion}
+
+Scaling is necessary for data in an RNN. Scalers was trained on each training fold which did not include the test data. This ensures no data leakage.
 
 \subsubsection{Dataset 1: Apple Stock Data}
 
-An Elman RNN was trained using the Apple stock data. The loss function used was mean-squared error. The \texttt{torch.optim.Adam} Adam optimizer was used with a learning rate of 0.002, which was adjusted based on test versus validation performance.
+Here are the parameter choices for the Elman model:
 
-The test versus validation performance for each fold was monitored using plots to prevent over-fitting and under-fitting.
+\begin{enumerate}[]
+	\item Cross validation of 8 folds was used, due to small size of data set.
+	\item A robust scaler was used.
+	\item Dropout of 0.1 was used.
+	\item A batch size of 128 was used.
+	\item Learning rate of 0.005, increased from 0.001 after noticing slow convergence.
+	\item A weight decay of 0.0001 which was increased from default of 0 due to detected over-fitting
+	\item A early stopping patience of 20 which was increased from 10 originally after it was noticed that the algorithm was finding better local minima if given the opportunity.
+	\item Model trained for 150 epochs in an attempt to find minima.
+\end{enumerate}
 
-A standard time series data set split was used as maximum data retention was needed as there was not a lot of data to train with.
+The Jordan model uses the same parameters with a state layer size of 32.
 
-\begin{figure}[htbp] 
+Here is the distribution of the stock data:
+
+\begin{figure}[H] 
 	\centering
 	\includegraphics[width=1.0\linewidth]{../images/apple-closing-price-over-time.pdf}
 	\caption{Apple closing price over time}
 	\label{fig:apple-closing}
 \end{figure}
 
-All tested models struggled to stabilise parameters when the price surges (around 2020-2021) were included in the fold. The models sometimes over-fitted and other times under-fitted depending on the fold it trained on. The models mainly over-fitted. The multi-recurrent RNN was particularly susceptible to over-fitting.
+We can see it is very stochastic. There is also very little data. This data set will mainly showcase the shortcomings of the RNNs with small datasets. 
 
-The Jordan RNN performed better then the Elman RNN for folds with more training data. Dropout was applied in order to decrease over-fitting, which lead to an increase in performance. 
+The hidden layer size of 32 seemed to under-fit the data. There is simply not enough data to for the Elman model to learn. Here we can see this with the predictions:
+
+\begin{figure}[H] 
+	\centering
+	\includegraphics[width=1.0\linewidth]{../images/apple-elman-h32-actual-vs-predicted.pdf}
+	\caption{Apple closing price over time predictions (Elman hidden year size 32)}
+	\label{fig:apple-closing-predictions}
+\end{figure}
+
+The Jordan model appears to do well in the test folds until it reaches the fold with a massive price increase where performance dwindles.
+
+\begin{figure}[H] 
+	\centering
+	\includegraphics[width=1.0\linewidth]{../images/apple-jordan-h32-actual-vs-predicted.pdf}
+	\caption{Apple closing price over time predictions (Jordan hidden layer size 32)}
+	\label{fig:apple-closing-predictions-jordan}
+\end{figure}
 
 \begin{table}[htbp]
-	\caption{Apple stock cross-validation best performance results (MSE)}
+	\caption{Absolute difference between prediction and actual for best fold model (for unseen Apple stock data)}
 	\resizebox{\columnwidth}{!}{
-		\csvautobooktabular{../csv-descriptions/cv-results-apple-combined.csv}
+		\csvautobooktabular{../csv-descriptions/apple-rnn-results.csv}
 	}
-	\label{tab:apple-results}
+	\label{tab:apple-rnn-summary}
 \end{table}
 
-The best RNN for the Apple stock dataset was chosen based off the median cross-validation MSE result. There is not enough data for the memory banks of the Multi-recurrent RNN to be practical. From this testing the Jordan RNN is the best for the Apple stock price dataset.
+
+
+\subsubsection{Dataset 2: Cape Town Weather Data}
+
+Here are the Elman RNN parameter choices for this dataset:
+
+\begin{enumerate}[]
+	\item Cross validation of 6 folds was used, due to size of data set and computational restrictions.
+	\item A robust scaler was used.
+	\item Dropout of 0.2 was used.
+	\item A batch size of 128 was used.
+	\item Learning rate of 0.002, increased from 0.001 after noticing slow convergence.
+	\item A weight decay of 0.0001 which was increased from default of 0 due to detected over-fitting
+	\item A early stopping patience of 20 which was increased from 10 originally after it was noticed that the algorithm was finding better local minima if given the opportunity.
+	\item Model trained for 100 epochs.
+\end{enumerate}
+
+The same parameters were used then for the Jordan RNN with a state layer size of 32, with no issues arising.
+
+The following is the distribution of the weather data for Cape Town over time:
+
+\begin{figure}[htbp] 
+	\centering
+	\includegraphics[width=1.0\linewidth]{../images/weather-over-time.pdf}
+	\caption{Cape Town weather over time}
+	\label{fig:cape-town-weather-time}
+\end{figure}
+
+The extreme cyclic nature made it very possible that the model would over-fit. The model did over-fit but surprisingly the validation performance was better then the test performance. Altering the learning rate, weight decay or dropout did not alter this. The performance is relatively good considering it only uses one raw feature. If the previous day's weather was included as a feature this would probably greatly increase the performance. Other external data would also greatly increase the performance. Here are the results from the cross-validation:
+
+\begin{table}[htbp]
+	\caption{Absolute difference between prediction and actual for best fold model (for unseen Cape Town weather data)}
+	\resizebox{\columnwidth}{!}{
+		\csvautobooktabular{../csv-descriptions/weather-rnn-results.csv}
+	}
+	\label{tab:weather-rnn-summary}
+\end{table}
+
+\begin{figure}[H] 
+	\centering
+	\includegraphics[width=1.0\linewidth]{../images/weather-elman-h32-actual-vs-predicted.pdf}
+	\caption{Weather over time predictions (Jordan hidden layer size 32)}
+	\label{fig:weather-predictions-elman}
+\end{figure}
+
+\subsubsection{Dataset 3: Air quality dataset}
+
+\begin{table}[htbp]
+	\caption{Absolute difference between prediction and actual for best fold model (for unseen Air quality data)}
+	\resizebox{\columnwidth}{!}{
+		\csvautobooktabular{../csv-descriptions/airquality-rnn-results.csv}
+	}
+	\label{tab:weather-rnn-summary}
+\end{table}
 
 \section{Conclusion}
 

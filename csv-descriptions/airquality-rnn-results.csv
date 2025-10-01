@@ -1,0 +1,3 @@
+Model,Mean,StdDev,Min,25,Median,75,Max
+Jordan (hidden size 32),220.8,192.22,0.27,89.03,185.88,299.65,1954.35
+Elman (hidden size 32),256.09,169.88,1.14,134.82,223.82,365.41,1670.03

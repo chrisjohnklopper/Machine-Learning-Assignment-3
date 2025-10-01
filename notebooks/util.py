@@ -464,7 +464,8 @@ def training(model,
             
             print(f'Epoch [{epoch+1}/{num_epochs}], '
                 f'Loss: {epoch_train_loss / len(train_loader):.4f}, '
-                f'Validation Loss: {epoch_validation_loss / len(validation_loader):.4f}')
+                f'Validation Loss: {epoch_validation_loss / len(validation_loader):.4f}, '
+                f'Squareroot of Validation Loss: {(epoch_validation_loss / len(validation_loader))**0.5:.4f}')
             
             test_losses.append(epoch_train_loss / len(train_loader))
             validation_losses.append(epoch_validation_loss / len(validation_loader))

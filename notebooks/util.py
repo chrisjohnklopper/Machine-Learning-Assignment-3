@@ -102,7 +102,7 @@ def convert_feature_into_cyclic(data, feature, max_value):
     data[f'{feature}Cos'] = np.cos(2 * np.pi * data[feature] / max_value)
     return data
 
-def get_predictions(raw_test, preprocessed_test, results, model_name, target_feature_name, xlabel, ylabel, title, show_plot=False, save_path=None): 
+def get_predictions(raw_test, preprocessed_test, results, model_name, target_feature_name, xlabel, ylabel, title, show_plot=False, save_path=None, zero_values=False): 
     dates = raw_test['DateTime'].values
     #results = weather_elman_h32_results 
     scaler = results['scaler_X']
@@ -114,6 +114,9 @@ def get_predictions(raw_test, preprocessed_test, results, model_name, target_fea
     preds = preds.squeeze()
     actual = raw_test[target_feature_name].values
     actual = actual[-len(preds):]
+
+    if zero_values:
+        preds = np.maximum(preds, 0)
 
     mses = abs(preds - actual)
     prediction_results = pd.DataFrame(mses).describe().T

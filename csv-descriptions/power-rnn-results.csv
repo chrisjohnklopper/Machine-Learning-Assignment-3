@@ -1,3 +1,4 @@
-Model,Mean,StdDev,Min,25,Median,75,Max
-Jordan (hidden size 32),0.86,0.7,0.0,0.4,0.7,1.06,6.71
-Elman (hidden size 32),0.65,0.69,0.0,0.2,0.42,0.8,6.84
+Model,Mean,Std. Dev.,Min,25,Median,75,Max
+JordanRNN H32 Power,0.71,0.74,0.0,0.24,0.37,0.92,6.71
+ElmanRNN H32 Power,0.6,0.7,0.0,0.2,0.31,0.76,6.84
+MultiRNN H32 Power,1.68,0.63,0.0,1.42,1.78,2.07,5.7

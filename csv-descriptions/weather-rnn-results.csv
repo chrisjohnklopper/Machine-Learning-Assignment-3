@@ -1,3 +1,4 @@
 Model,Mean,StdDev,Min,25,Median,75,Max
 Jordan (hidden size 32),8.72,3.67,0.4,5.79,8.45,11.51,23.51
 Elman (hidden size 32),3.16,2.18,0.0,1.4,2.82,4.54,16.03
+MultiRNN (hidden size 32),9.90,2.25,1.92,8.42,9.80,11.27,20.92

@@ -12,9 +12,13 @@
 \usepackage{float}
 \usepackage{caption}
 \usepackage{tabularx}
+\usepackage{url}
+
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 \begin{document}
+	
+
 
 \title{Performance comparison between simple RNNs*\\
 {\footnotesize}
@@ -40,7 +44,7 @@ This paper presents a comparison of three simple recurrent neural network archit
 
 % TODO
 
-This paper will mathematically define the structures of the Elman, Jordan and multi-recurrent simple neural networks. It will also showcase how different data sets with different sizes and data distribution qualities impact the performance of the models and how to mitigate under-fitting and over-fitting. Also covered will be a motivated choice on which architecture to select for each of the data sets considered.
+This paper will mathematically define the structures of the Elman, Jordan and multi-recurrent simple neural networks. It will also showcase how different data sets with different sizes and data distribution qualities impact the performance of the models and how to mitigate under-fitting and over-fitting. Also covered will be a motivated choice on which architecture to select for each of the data sets considered. The GitHub repository is available at: https://github.com/chrisjohnklopper/Machine-Learning-Assignment-3.
 
 \section{Pre-processing and description of datasets}
 
@@ -136,9 +140,9 @@ The Property price data is non-stationary. The Property price data is a regressi
 \begin{table}[H]
 	\centering
 	\caption{Summary statistics for Individual household power consumption}
-\resizebox{\columnwidth}{!}{
-	\csvautobooktabular{../csv-descriptions/power-raw-description-numerical.csv}
-}
+	\resizebox{\columnwidth}{!}{
+		\csvautobooktabular{../csv-descriptions/power-description-numerical.csv}
+	}
 	\label{tab:power-stats}
 \end{table}
 
@@ -146,7 +150,7 @@ The Property price data is non-stationary. The Property price data is a regressi
 
 \subsection{Time-series-split (Rolling basis)}
 
-Successive training sets are supersets of those that come before them, unlike standard cross-validation methods, to ensure that no folds lead to training on future data and evaluating on past data. The \texttt{sklearn.model\_selection.TimeSeriesSplit} time series split method was used during cross validation of models. If cross-validation is mentioned in this paper it refers to Time-series-split cross-validation.
+Successive training sets are supersets of those that come before them, unlike standard cross-validation methods, to ensure that no folds lead to training on future data and evaluating on past data \cite{shrivastava2020cross}. The \texttt{sklearn.model\_selection.TimeSeriesSplit} time series split method was used during cross validation of models. If cross-validation is mentioned in this paper it refers to Time-series-split cross-validation.
 
 \begin{figure}[H] 
 	\centering
@@ -162,6 +166,8 @@ This is used in the \texttt{training} method in the \texttt{util.py} file to com
 This section covers current literature on the different RNN architectures experimented with in this paper.
 
 \subsection{Elman and Jordan recurrent neural network}
+
+The following summary is obtained from Wikipedia\cite{enwiki:1314348414} and is expanded upon in this paper:
 
 Both the Elman and Jordan RNNs are three layer networks (input, hidden and output layer) with the Jordan RNN having an additional state vector (known as context units). The following notation is defined:
 
@@ -227,7 +233,7 @@ The hidden layer $h_t$ in a Jordan RNN is updated using a state layer vector $s_
 
 \subsection{Multi-recurrent neural network}
 
-For brevity the absolute dimensions of matrices and vectors are not specified but can be implied. The following is obtained from TODO and summarised for this paper:
+For brevity the absolute dimensions of matrices and vectors are not specified but can be implied. The following is obtained from \cite{10.5555/AAI29191757}  and summarised for this paper:
 
 \subsubsection{Memory architecture and configuration}
 
@@ -317,13 +323,13 @@ The models were implemented using \texttt{PyTorch} modules using the exact mathe
 
 Data was preprocessed into required format. This means recognising and dealing with noisy data, outliers, class imbalances and so forth. The models were tested with a base line model. If models began over-fitting too much, the weight decay and dropout was increased. The learning rate would be decreased if oscillation around the local minima began. The momentum parameter of the Adam optimizer was modified if the convergence seemed slow. The data was split was 70\% training and 30\% test. The training data was used in cross-validation.
 
-The distribution of features over time was plotted in order to better understand the features. Over-fitting was more prevalent then under-fitting in almost all the folds, so it did not make sense to increase the hidden layer size from 32. The focus was not on feature engineering but ensuring the same data is fed into the models to ensure a fair comparison.
+The distribution of features over time was plotted in order to better understand the features. Over-fitting was more prevalent then under-fitting in almost all the folds, so it did not make sense to increase the hidden layer size from 32. The focus was not on feature engineering but ensuring the same data is fed into the models to ensure a fair comparison. MSE was used as the loss metric for all models. A memory configuration of $(4,4,4)$ is used for the multi-recurrent neural network as this was noted as being the best performing from testing found in \cite{10.5555/AAI29191757}.
 
 Best models are chosen by there absolute error performance on the unseen test fold data.
 
 \section{Results \& discussion}
 
-Scaling is necessary for data in an RNN. Scalers was trained on each training fold which did not include the test data. This ensures no data leakage.  
+Scaling is necessary for data in an RNN. Scalers was trained on each training fold which did not include the test data. This ensures no data leakage.
 
 \subsubsection{Dataset 1: Apple Stock Data}
 
@@ -351,7 +357,7 @@ Here is the distribution of the stock data:
 	\label{fig:apple-closing}
 \end{figure}
 
-The data is very stochastic. There is also very little data. This data set will mainly showcase the shortcomings of the RNNs with small datasets. 
+The data is very stochastic. There is also very little data. This data set will mainly showcase the shortcomings of the RNNs with small datasets. The Multi-recurrent neural network performed very poorly on this small dataset and is omitted from the results.
 
 Both Elman and Jordan with hidden layer size of 32 seemed to under-fit the data. There is simply not enough data to for the Elman model to learn. The result of this is showcased with the predictions:
 
@@ -398,7 +404,7 @@ Here are the Elman RNN parameter choices for this dataset:
 	\item Model trained for 100 epochs.
 \end{enumerate}
 
-The same parameters were used then for the Jordan RNN with a state layer size of 32, with no issues arising.
+The same parameters were used then for the Jordan RNN with a state layer size of 32, with no issues arising. The MultiRNN model used the same parameters.
 
 The following is the distribution of the weather data for Cape Town over time:
 
@@ -435,6 +441,15 @@ The Elman model is preferred here. The performance is likely attributed to a mai
 	\label{fig:weather-predictions-jordan}
 \end{figure}
 
+\begin{figure}[H] 
+	\centering
+	\includegraphics[width=1.0\linewidth]{../images/weather-multirnn-h32-actual-vs-predicted.pdf}
+	\caption{Weather over time predictions (MultiRNN hidden layer size 32)}
+	\label{fig:weather-predictions-multi}
+\end{figure}
+
+
+
 \subsubsection{Dataset 3: Air quality dataset}
 
 The PT08.S3(NOx) feature is our target variable. It poses the most challenge as it is not very correlated with any other features. Here are the Elman RNN parameter choices for this dataset:
@@ -453,6 +468,30 @@ The PT08.S3(NOx) feature is our target variable. It poses the most challenge as 
 
 The Jordan model used similar parameters with state layer size of 32. The models over-fitted. Learning rate, weight decay, drop-out and Adam momentum parameters were tweaked to try and reduce this as much as possible. The following results are obtained:
 
+The num\_epochs for the MultiRNN was reduced from 100 to 70, due to fast convergence.
+
+\begin{figure}[H] 
+	\centering
+	\includegraphics[width=1.0\linewidth]{../images/airquality-elman-h32-actual-vs-predicted.pdf}
+	\caption{PT08.S3(NOx) over time predictions (Elman hidden layer size 32)}
+	\label{fig:aq-predictions-elman}
+\end{figure}
+
+\begin{figure}[H] 
+	\centering
+	\includegraphics[width=1.0\linewidth]{../images/airquality-jordan-h32-actual-vs-predicted.pdf}
+	\caption{PT08.S3(NOx) over time predictions (Jordan hidden layer size 32)}
+	\label{fig:aq-predictions-jordan}
+\end{figure}
+
+\begin{figure}[H] 
+	\centering
+	\includegraphics[width=1.0\linewidth]{../images/airquality-multirnn-h32-actual-vs-predicted.pdf}
+	\caption{PT08.S3(NOx) over time predictions (MultiRNN hidden layer size 32)}
+	\label{fig:aq-predictions-multi}
+\end{figure}
+
+
 \begin{table}[H]
 	\caption{Absolute difference between prediction and actual for best fold model (for unseen Air quality data)}
 	\resizebox{\columnwidth}{!}{
@@ -461,7 +500,7 @@ The Jordan model used similar parameters with state layer size of 32. The models
 	\label{tab:weather-rnn-summary}
 \end{table}
 
-The Jordan model is preferred here.
+The Jordan model performs the best and is suggested for this dataset.
 
 \subsubsection{Dataset 4: Property price data set}
 
@@ -477,7 +516,7 @@ Here are the Elman RNN parameter choices for this dataset:
 	\item Model trained for 100 epochs.
 \end{enumerate}
 
-The Jordan model had equivalent parameters with a state layer of size 32.
+The Jordan model had equivalent parameters with a state layer of size 32. The patience for the Multi-recurrent neural network was decreased but otherwise the parameters are identical.
 
 Elman model initially over-fitted. Attempts were made to increase the drop-out and weight decay but this only improved the performance marginally.
 
@@ -496,7 +535,7 @@ Elman model initially over-fitted. Attempts were made to increase the drop-out a
 	\label{tab:house-rnn-summary}
 \end{table}
 
-The performance is not good and that more feature engineering would need to be done, potentially a moving average. The performance of the Elman model is better then the Jordan model.
+The performance is not good and that more feature engineering would need to be done, potentially a moving average. The performance of the Elman model is better then the Jordan model and MultiRNN model.
 
 \subsubsection{Dataset 5: Individual household power consumption}
 
@@ -512,7 +551,7 @@ Here are the Elman RNN parameter choices for this dataset:
 	\item Model trained for 100 epochs.
 \end{enumerate}
 
-The Jordan model had equivalent parameters with a state layer of size 32.
+The Jordan model had equivalent parameters with a state layer of size 32. The multi-recurrent neural network had the same parameters.
 
 This dataset is non-stationary but due to more data available the model can fit better. The model over-fitted for earlier folds but the validation performance was better then test performance for later folds.
 
@@ -523,7 +562,21 @@ This dataset is non-stationary but due to more data available the model can fit 
 	\label{fig:power-predictions-jordan}
 \end{figure}
 
-The Elman model is able to detect surges well and even reduces the scale of the surges between 2007-02 and 2007-03 adaptively without a state layer.
+\begin{figure}[H] 
+	\centering
+	\includegraphics[width=1.0\linewidth]{../images/power-elman-h32-actual-vs-predicted.pdf}
+	\caption{Household power over time predictions (Elman hidden layer size 32)}
+	\label{fig:power-predictions-elman}
+\end{figure}
+
+\begin{figure}[H] 
+	\centering
+	\includegraphics[width=1.0\linewidth]{../images/power-multirnn-h32-actual-vs-predicted.pdf}
+	\caption{Household power over time predictions (Multirecurrent hidden layer size 32)}
+	\label{fig:power-predictions-multi}
+\end{figure}
+
+The Elman model is able to detect surges well and even reduces the scale of the surges between 2007-02 and 2007-03 adaptively without a state layer. The Multi-recurrent neural network takes significantly longer to train.
 
 \begin{table}[H]
 	\caption{Absolute difference between prediction and actual for best fold model (for unseen Power consumption data)}
@@ -537,8 +590,10 @@ Based on these results, the Elman model is preferred for this dataset.
 
 \section{Conclusion}
 
-The models are simply too complex to be trained with small datasets. The results seem to indicate that for non-stationary data the Jordan model is preferred and for more predictable stationary data the Elman model is preferred. Ideally you would not use a recurrent neural network at all for data sets of these sizes. It is also showcased that the pre-processing of the data set is very important for the models. With more advanced feature engineering techniques the model's performance would likely be better. The effect of feature engineering relates to the type of architecture used. 
+The models are simply too complex to be trained with small datasets. Especially for the MultiRNN. The results seem to indicate that for non-stationary data the Jordan model is preferred and for more predictable stationary data the Elman model is preferred. This paper highlights the need to consider other types of machine learning models for smaller datasets and not to immediately jump to using large parameter neural networks. Ideally you would not use a recurrent neural network at all for data sets of these sizes. It has also showcased that the pre-processing of the data set is very important for the models. With more advanced feature engineering techniques the model's performance would likely be better. The effect of feature engineering relates to the type of architecture used. 
 
-
+\nocite{*}
+\bibliographystyle{IEEEtran}
+\bibliography{references}
 
 \end{document}

@@ -1,0 +1,6 @@
+Dataset,Source URL,Num Observations
+Apple Stock Data,nasdaq.com/market-activity/stocks/aapl/historical,2514
+Cape Town Weather Data,kaggle.com/datasets/muthuj7/weather-dataset,17719
+Air quality data,archive.ics.uci.edu/dataset/360/,9357
+Property price data,kaggle.com/datasets/htagholdings/property-sales,29580
+Individual household power consumption,archive.ics.uci.edu/dataset/235,120000
